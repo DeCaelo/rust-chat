@@ -1,5 +1,7 @@
 use axum::routing::get;
 use socketioxide::{extract::SocketRef, SocketIo};
+use tower::ServiceBuilder;
+use tower_http::cors::CorsLayer;
 use tracing::info;
 use tracing_subscriber::FmtSubscriber;
 
@@ -17,7 +19,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = axum::Router::new()
         .route("/", get(|| async { "Hello, World" }))
-        .layer(layer);
+        .layer(
+            ServiceBuilder::new()
+                .layer(CorsLayer::permissive())
+                .layer(layer),
+        );
 
     info!("Starting server");
 
