@@ -1,5 +1,4 @@
 use axum::routing::get;
-use serde_json::Value;
 use socketioxide::{
     extract::{Data, SocketRef},
     SocketIo,
@@ -9,11 +8,38 @@ use tower_http::cors::CorsLayer;
 use tracing::info;
 use tracing_subscriber::FmtSubscriber;
 
+#[derive(Debug, serde::Deserialize)]
+struct MessageIn {
+    room: String,
+    text: String,
+}
+
+#[derive(serde::Serialize)]
+struct MessageOut {
+    text: String,
+    user: String,
+    date: chrono::DateTime<chrono::Utc>,
+}
+
 async fn on_connect(socket: SocketRef) {
     info!("socket connected: {}", socket.id);
 
-    socket.on("message", |_socket: SocketRef, Data::<Value>(data)| {
+    socket.on("join", |socket: SocketRef, Data::<String>(room)| {
+        info!("Received join: {:?}", room);
+        let _ = socket.leave_all();
+        let _ = socket.join(room);
+    });
+
+    socket.on("message", |socket: SocketRef, Data::<MessageIn>(data)| {
         info!("Received message: {:?}", data);
+
+        let response = MessageOut {
+            text: data.text,
+            user: format!("anon-{}", socket.id),
+            date: chrono::Utc::now(),
+        };
+
+        let _ = socket.within(data.room).emit("message", response);
     })
 }
 
