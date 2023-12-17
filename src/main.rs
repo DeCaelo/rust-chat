@@ -1,5 +1,9 @@
 use axum::routing::get;
-use socketioxide::{extract::SocketRef, SocketIo};
+use serde_json::Value;
+use socketioxide::{
+    extract::{Data, SocketRef},
+    SocketIo,
+};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tracing::info;
@@ -7,6 +11,10 @@ use tracing_subscriber::FmtSubscriber;
 
 async fn on_connect(socket: SocketRef) {
     info!("socket connected: {}", socket.id);
+
+    socket.on("message", |_socket: SocketRef, Data::<Value>(data)| {
+        info!("Received message: {:?}", data);
+    })
 }
 
 #[tokio::main]
